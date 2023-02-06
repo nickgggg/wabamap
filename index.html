@@ -1,0 +1,49 @@
+<html>
+
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+    <style>
+        body {margin: 0;}
+    </style>
+</head>
+
+<body>
+    <div id="map" style="height: 100%; width: 100%;"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    <script>
+
+        //   setView is california
+        var map = L.map('map').setView([36.7783, -119.4179], 7);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
+        //   these are random coordinates in california
+        var locations = [
+            [37.788022, -122.399797],
+            [34.052235, -118.243683],
+            [37.338208, -121.886330],
+            [37.774929, -122.419416],
+            [34.019394, -118.491191],
+            [36.778259, -119.417931],
+            [37.618423, -122.383036],
+            [33.7490, -117.890502],
+            [33.953349, -117.396156],
+            [38.581572, -121.494400]
+        ];
+        
+        var wabaIcon = L.icon({
+            iconUrl: 'img/mapStatic.png',
+            iconSize: [40, 40], // size of the icon
+        });
+
+        for (var i = 0; i < locations.length; i++) {
+            var marker = L.marker(locations[i], {icon: wabaIcon}).addTo(map);
+        }
+
+    </script>
+</body>
+
+</html>
