@@ -12,10 +12,9 @@ const activeMarkers = {};
 
 // Parse Olo timestamp
 function parseOloTimestamp(timestamp) {
-    // "YYYYMMDD HH:MM" format
     const [datePart, timePart] = timestamp.split(' ');
     const year = datePart.slice(0, 4);
-    const month = datePart.slice(4, 6) - 1;  // JavaScript months are 0-indexed
+    const month = datePart.slice(4, 6) - 1; // JavaScript months are 0-indexed
     const day = datePart.slice(6);
     const [hours, minutes] = timePart.split(':');
     return new Date(year, month, day, hours, minutes);
@@ -33,8 +32,8 @@ function createOrderMarker(order) {
     const marker = L.marker([order.latitude, order.longitude], {
         icon: L.divIcon({
             className: 'order-marker',
-            html: `<div class="marker-pulse"></div>`
-        })
+            html: `<div class="marker-pulse"></div>`,
+        }),
     });
 
     marker.bindPopup(`
@@ -49,16 +48,19 @@ function createOrderMarker(order) {
 
 // Real-time orders subscription
 function subscribeToOrders() {
-    const orderChannel = supabase
+    supabase
         .channel('active-orders')
-        .on('postgres_changes', 
-            { event: 'INSERT', schema: 'public', table: 'orders' }, 
+        .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'orders' },
             (payload) => {
                 const order = payload.new;
                 if (isOrderActive(order)) {
-                    const marker = createOrderMarker(order);
-                    activeMarkers[order.id] = marker;
-                    updateOrderStats();
+                    if (!activeMarkers[order.id]) {
+                        const marker = createOrderMarker(order);
+                        activeMarkers[order.id] = marker;
+                        updateOrderStats();
+                    }
                 }
             }
         )
@@ -73,23 +75,21 @@ function updateOrderStats() {
 
 // Periodic marker cleanup
 function cleanupExpiredMarkers() {
+    const currentTime = new Date();
     Object.entries(activeMarkers).forEach(([id, marker]) => {
-        const orderRef = supabase.from('orders').select('*').eq('id', id).single();
-        orderRef.then(({ data, error }) => {
-            if (error) return;
-            if (!isOrderActive(data)) {
-                map.removeLayer(marker);
-                delete activeMarkers[id];
-                updateOrderStats();
-            }
-        });
+        const readyTime = parseOloTimestamp(marker.getPopup().getContent().match(/Ready By: (.+)/)[1]);
+        if (currentTime >= readyTime) {
+            map.removeLayer(marker);
+            delete activeMarkers[id];
+            updateOrderStats();
+        }
     });
 }
 
 // Initialize application
 function init() {
     subscribeToOrders();
-    setInterval(cleanupExpiredMarkers, 60000);  // Check every minute
+    setInterval(cleanupExpiredMarkers, 60000); // Check every minute
 }
 
 // Start the application
